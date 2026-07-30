@@ -1,0 +1,20 @@
+Credenciales de Prueba
+   - Redactor (Gregory):
+     Usuario: gregory
+     Contraseña: 123456
+
+   - Diseñador (Matías):
+     Usuario: Matias
+     Contraseña: Mati1234
+
+   - Aprobador (Carlos):
+     Usuario: Carlos
+     Contraseña: Carl1234
+
+Comandos de instalación y ejecución
+
+   1. Instalar dependencias:
+      pip install -r requirements.txt
+
+   2. Aplicar migraciones de la base de datos:
+      python manage.py migrate

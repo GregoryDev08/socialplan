@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="light-style" dir="ltr" data-theme="theme-default" data-assets-path="{% static 'assets/' %}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+  <title>Iniciar Sesión | SocialPlan</title>
+
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/img/favicon/favicon.ico' %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'assets/vendor/fonts/boxicons.css' %}" />
+  <link rel="stylesheet" href="{% static 'assets/vendor/css/core.css' %}" />
+  <link rel="stylesheet" href="{% static 'assets/vendor/css/theme-default.css' %}" />
+  <link rel="stylesheet" href="{% static 'assets/css/demo.css' %}" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+
+  <script src="{% static 'assets/vendor/js/helpers.js' %}"></script>
+  <script src="{% static 'assets/js/config.js' %}"></script>
+
+  <style>
+    .authentication-wrapper {
+      min-height: 100vh;
+    }
+    .brand-logo-wrap {
+      background: linear-gradient(135deg, #696cff 0%, #03c3ec 100%);
+    }
+    .login-illustration {
+      font-size: 8rem;
+      color: rgba(255,255,255,0.2);
+    }
+    .auth-card {
+      max-width: 420px;
+      width: 100%;
+    }
+    .divider-text {
+      position: relative;
+    }
+    .divider-text::before,
+    .divider-text::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 38%;
+      height: 1px;
+      background: #d9dee3;
+    }
+    .divider-text::before { left: 0; }
+    .divider-text::after { right: 0; }
+  </style>
+</head>
+
+<body class="authentication-wrapper authentication-basic container-p-y">
+  <div class="authentication-wrapper authentication-basic d-flex align-items-center justify-content-center">
+
+    <div class="auth-card card shadow-sm">
+      <div class="card-body p-4 p-sm-5">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary mb-3"
+               style="width: 64px; height: 64px;">
+            <i class="bx bx-broadcast text-white" style="font-size: 2rem;"></i>
+          </div>
+          <h4 class="fw-bold mb-1">SocialPlan</h4>
+          <p class="text-muted small">Planificador de Contenidos</p>
+        </div>
+
+        <h5 class="mb-1 fw-semibold">Bienvenido</h5>
+        <p class="mb-4 text-muted">Ingresa tus credenciales para continuar</p>
+        {% if form.errors %}
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bx bx-error-circle me-2"></i>
+            <strong>Credenciales incorrectas.</strong> Verifica tu usuario y contraseña.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endif %}
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post" action="{% url 'cuentas:login' %}" id="formLogin">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label for="id_username" class="form-label fw-semibold">Usuario</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bx bx-user"></i></span>
+              <input
+                type="text"
+                id="id_username"
+                name="username"
+                class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                placeholder="tu_usuario"
+                autofocus
+                required
+                value="{{ form.username.value|default:'' }}"
+              />
+              {% if form.username.errors %}
+                <div class="invalid-feedback">{{ form.username.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label for="id_password" class="form-label fw-semibold mb-0">Contraseña</label>
+              <a href="#" class="small text-primary">¿Olvidaste tu contraseña?</a>
+            </div>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bx bx-lock-alt"></i></span>
+              <input
+                type="password"
+                id="id_password"
+                name="password"
+                class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                placeholder="············"
+                required
+              />
+              <span class="input-group-text cursor-pointer" id="togglePassword" role="button" title="Mostrar contraseña">
+                <i class="bx bx-hide" id="iconPassword"></i>
+              </span>
+              {% if form.password.errors %}
+                <div class="invalid-feedback">{{ form.password.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMe" />
+              <label class="form-check-label" for="rememberMe">Mantener sesión iniciada</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold">
+            <i class="bx bx-log-in-circle me-2"></i> Ingresar
+          </button>
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}" />
+          {% endif %}
+
+        </form>
+
+        <div class="divider-text text-center my-4">
+          <span class="px-3 text-muted small bg-white">o</span>
+        </div>
+        <div class="text-center">
+          <p class="small text-muted mb-0">
+            ¿No tienes cuenta?
+            <a href="#" class="text-primary fw-semibold">Contacta al administrador</a>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'assets/vendor/libs/popper/popper.js' %}"></script>
+  <script src="{% static 'assets/vendor/js/bootstrap.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+  <script>
+    document.getElementById('togglePassword').addEventListener('click', function() {
+      const input = document.getElementById('id_password');
+      const icon = document.getElementById('iconPassword');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bx bx-show';
+      } else {
+        input.type = 'password';
+        icon.className = 'bx bx-hide';
+      }
+    });
+
+    {% if login_error %}
+    Swal.fire({
+      icon: 'error',
+      title: 'Acceso denegado',
+      text: 'Usuario o contraseña incorrectos. Intenta de nuevo.',
+      confirmButtonColor: '#696cff',
+      confirmButtonText: 'Intentar de nuevo'
+    });
+    {% endif %}
+  </script>
+
+</body>
+</html>

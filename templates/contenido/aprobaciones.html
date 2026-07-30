@@ -1,0 +1,209 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}Canal de Aprobación{% endblock %}
+{% block page_title %}<i class="bx bx-check-shield me-2"></i> Canal de Aprobación{% endblock %}
+{% block menu_aprobaciones %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pub-card { transition: box-shadow 0.15s; }
+  .pub-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .dt-button { font-size: 0.8rem !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1">Canal de Aprobación</h4>
+    <p class="text-muted mb-0 small">
+      Publicaciones en estado <span class="badge bg-warning">En Revisión</span> que requieren aprobación.
+    </p>
+  </div>
+  <span class="badge bg-warning fs-6">{{ pendientes|length }} pendiente{{ pendientes|length|pluralize:"s" }}</span>
+</div>
+
+{% if pendientes %}
+
+<div class="row g-4 mb-4">
+  {% for pub in pendientes %}
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card pub-card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between mb-2">
+          <span class="badge bg-label-secondary">
+            <i class="{{ pub.canal.icono|default:'bx bx-broadcast' }} me-1"></i>{{ pub.canal.nombre }}
+          </span>
+          <span class="badge bg-warning">En Revisión</span>
+        </div>
+        <h6 class="fw-bold mb-1">{{ pub.titulo|truncatechars:60 }}</h6>
+        <p class="text-muted small mb-2">{{ pub.contenido|truncatechars:100|default:"Sin descripción." }}</p>
+        <div class="d-flex align-items-center gap-3 mb-3 text-muted small">
+          <span><i class="bx bx-calendar me-1"></i>{{ pub.fecha_publicacion|date:"d M Y H:i" }}</span>
+          {% if pub.redactor %}
+          <span><i class="bx bx-user me-1"></i>{{ pub.redactor.get_full_name|default:pub.redactor.username }}</span>
+          {% endif %}
+        </div>
+        {% if pub.campana %}
+        <p class="small text-muted mb-3"><i class="bx bx-bullseye me-1"></i>{{ pub.campana.nombre }}</p>
+        {% endif %}
+      </div>
+      <div class="card-footer bg-transparent pt-0">
+        <div class="d-flex gap-2">
+          {% if user_role == 'aprobador' %}
+          <button type="button" class="btn btn-success btn-sm flex-grow-1 btn-cambiar-estado"
+            data-pk="{{ pub.pk }}" data-estado="aprobado">
+            <i class="bx bx-check me-1"></i>Aprobar
+          </button>
+          <button type="button" class="btn btn-outline-danger btn-sm flex-grow-1 btn-cambiar-estado"
+            data-pk="{{ pub.pk }}" data-estado="borrador">
+            <i class="bx bx-x me-1"></i>Rechazar
+          </button>
+          {% endif %}
+          <a href="{% url 'contenido:publicaciones_edit' pub.pk %}"
+             class="btn btn-outline-secondary btn-sm" title="Ver completo">
+            <i class="bx bx-edit"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bx bx-check-circle bx-lg text-success d-block mb-3"></i>
+    <h5 class="text-muted mb-2">No hay publicaciones pendientes</h5>
+    <p class="text-muted small">Todas las publicaciones en revisión han sido procesadas.</p>
+    <a href="{% url 'contenido:publicaciones_list' %}" class="btn btn-outline-primary btn-sm">
+      Ver todas las publicaciones
+    </a>
+  </div>
+</div>
+
+{% endif %}
+
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Historial reciente de aprobaciones</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tablaHistorial" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Canal</th>
+          <th>Estado actual</th>
+          <th>Fecha programada</th>
+          <th>Redactor</th>
+          <th class="text-center">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pub in historial %}
+        <tr id="fila-{{ pub.pk }}">
+          <td class="fw-semibold">{{ pub.titulo|truncatechars:50 }}</td>
+          <td><span class="badge bg-label-secondary">{{ pub.canal.nombre }}</span></td>
+          <td>
+            {% if pub.estado == 'aprobado' %}
+              <span class="badge bg-primary">Aprobado</span>
+            {% elif pub.estado == 'publicado' %}
+              <span class="badge bg-success">Publicado</span>
+            {% elif pub.estado == 'borrador' %}
+              <span class="badge bg-secondary">Borrador</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ pub.get_estado_display }}</span>
+            {% endif %}
+          </td>
+          <td class="text-nowrap">{{ pub.fecha_publicacion|date:"d M Y H:i" }}</td>
+          <td>{{ pub.redactor.get_full_name|default:pub.redactor.username|default:"—" }}</td>
+          <td class="text-center text-nowrap">
+            <a href="{% url 'contenido:publicaciones_edit' pub.pk %}"
+               class="btn btn-xs btn-outline-secondary" title="Ver">
+              Ver
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<form id="formCambiarEstado" method="post" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="estado" id="inputEstado">
+  <input type="hidden" name="next" value="{% url 'contenido:aprobaciones' %}">
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+
+  $('#tablaHistorial').DataTable({
+    pageLength: 10,
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+    dom: '<"d-flex align-items-center justify-content-between mb-3"lB>frtip',
+    buttons: [
+      { extend: 'copy',  text: '<i class="bx bx-copy me-1"></i>Copiar',      className: 'btn btn-sm btn-outline-secondary' },
+      { extend: 'csv',   text: '<i class="bx bx-download me-1"></i>CSV',     className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'excel', text: '<i class="bx bxs-file-export me-1"></i>Excel', className: 'btn btn-sm btn-outline-success',  exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'pdf',   text: '<i class="bx bxs-file-pdf me-1"></i>PDF',    className: 'btn btn-sm btn-outline-danger',   exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'print', text: '<i class="bx bx-printer me-1"></i>Imprimir', className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } }
+    ],
+    columnDefs: [
+      { orderable: false, targets: [5] },
+      { className: 'align-middle', targets: '_all' }
+    ]
+  });
+
+  $(document).on('click', '.btn-cambiar-estado', function() {
+    var pk     = $(this).data('pk');
+    var estado = $(this).data('estado');
+    var etiquetas = { aprobado: 'Aprobar', borrador: 'Rechazar (devolver a borrador)' };
+    var colores   = { aprobado: '#71dd37', borrador: '#ff3e1d' };
+
+    Swal.fire({
+      title: etiquetas[estado] || 'Cambiar estado',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: colores[estado] || '#696cff',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) {
+      if (!r.isConfirmed) return;
+
+      $.post(
+        '/contenido/publicaciones/' + pk + '/estado/',
+        { estado: estado, csrfmiddlewaretoken: '{{ csrf_token }}' },
+        function(data) {
+          if (data.ok) {
+            var etiquetasEstado = {
+              borrador: '<span class="badge bg-secondary">Borrador</span>',
+              revision: '<span class="badge bg-warning">En Revisión</span>',
+              aprobado: '<span class="badge bg-primary">Aprobado</span>',
+              publicado: '<span class="badge bg-success">Publicado</span>'
+            };
+            $('.estado-badge-' + pk).replaceWith(etiquetasEstado[data.estado] || data.estado);
+            $('#fila-' + pk).addClass('table-success');
+            setTimeout(function() { location.reload(); }, 900);
+          }
+        }
+      ).fail(function() {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar el estado.' });
+      });
+    });
+  });
+
+});
+</script>
+{% endblock %}

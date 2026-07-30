@@ -1,0 +1,208 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}Publicaciones{% endblock %}
+{% block page_title %}<i class="bx bx-file me-2"></i> Publicaciones{% endblock %}
+{% block menu_publicaciones %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  .btn-accion { padding: 0.25rem 0.6rem; font-size: 0.78rem; }
+  .dt-buttons { margin-bottom: 0; }
+  .dt-button { font-size: 0.8rem !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1">Publicaciones</h4>
+    <p class="text-muted mb-0 small"><kbd>Alt+N</kbd> nueva publicación</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'contenido:calendario' %}" class="btn btn-outline-secondary">
+      <i class="bx bx-calendar me-1"></i> Calendario
+    </a>
+    <a href="{% url 'contenido:publicaciones_create' %}" class="btn btn-primary">
+      <i class="bx bx-plus me-1"></i> Nueva Publicación
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <span class="text-muted small">Estado:</span>
+      <button class="btn btn-sm btn-outline-secondary filtro-estado active" data-estado="">Todos</button>
+      <button class="btn btn-sm btn-outline-secondary filtro-estado" data-estado="Borrador">Borrador</button>
+      <button class="btn btn-sm btn-outline-warning filtro-estado" data-estado="Revisión">En Revisión</button>
+      <button class="btn btn-sm btn-outline-primary filtro-estado" data-estado="Aprobado">Aprobado</button>
+      <button class="btn btn-sm btn-outline-success filtro-estado" data-estado="Publicado">Publicado</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Listado de Publicaciones</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tablaPublicaciones" class="table table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Título</th>
+          <th>Canal</th>
+          <th>Campaña</th>
+          <th>Estado</th>
+          <th>Engagement</th>
+          <th>Fecha</th>
+          <th>Redactor</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pub in publicaciones %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>
+            <span class="fw-semibold d-block">{{ pub.titulo|truncatechars:50 }}</span>
+            <small class="text-muted">{{ pub.contenido|truncatechars:60 }}</small>
+          </td>
+          <td>
+            <span class="badge bg-label-secondary">
+              <i class="{{ pub.canal.icono|default:'bx bx-broadcast' }} me-1"></i>
+              {{ pub.canal.nombre }}
+            </span>
+          </td>
+          <td>
+            {% if pub.campana %}
+              <a href="{% url 'contenido:campanas_edit' pub.campana.pk %}" class="text-body">
+                {{ pub.campana.nombre|truncatechars:25 }}
+              </a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if pub.estado == 'publicado' %}
+              <span class="badge bg-success">Publicado</span>
+            {% elif pub.estado == 'aprobado' %}
+              <span class="badge bg-primary">Aprobado</span>
+            {% elif pub.estado == 'revision' %}
+              <span class="badge bg-warning">En Revisión</span>
+            {% else %}
+              <span class="badge bg-secondary">Borrador</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="fw-semibold text-success">{{ pub.engagement_rate }}%</span>
+            <br><small class="text-muted">{{ pub.clics }} clics</small>
+          </td>
+          <td class="text-nowrap">
+            {{ pub.fecha_publicacion|date:"d M Y" }}
+            <br><small class="text-muted">{{ pub.fecha_publicacion|date:"H:i" }}</small>
+          </td>
+          <td>
+            {% if pub.redactor %}
+              <span class="small">{{ pub.redactor.get_full_name|default:pub.redactor.username }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-center text-nowrap">
+            <a href="{% url 'contenido:publicaciones_edit' pub.pk %}"
+               class="btn btn-sm btn-outline-primary btn-accion me-1" title="Editar">
+              <i class="bx bx-edit"></i>
+            </a>
+            {% if user_role == 'aprobador' and pub.estado == 'aprobado' %}
+            <form action="{% url 'contenido:accion_rapida_post' pub.pk 'publicado' %}" method="post" class="d-inline me-1">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-primary btn-accion" title="Publicar">
+                <i class="bx bx-send me-1"></i>Publicar
+              </button>
+            </form>
+            {% endif %}
+            <button type="button"
+              class="btn btn-sm btn-outline-danger btn-accion btn-eliminar"
+              data-titulo="{{ pub.titulo|escapejs }}"
+              data-url="{% url 'contenido:publicaciones_delete' pub.pk %}">
+              <i class="bx bx-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not publicaciones %}
+    <div class="text-center py-5">
+      <i class="bx bx-file-blank bx-lg text-muted d-block mb-3 opacity-25"></i>
+      <p class="text-muted mb-2">No hay publicaciones registradas.</p>
+      <a href="{% url 'contenido:publicaciones_create' %}" class="btn btn-primary btn-sm">
+        <i class="bx bx-plus me-1"></i> Crear la primera
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<form id="formEliminar" method="post" style="display:none;">
+  {% csrf_token %}
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+
+  var tabla = $('#tablaPublicaciones').DataTable({
+    pageLength: 10,
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+    dom: '<"d-flex align-items-center justify-content-between mb-3"lB>frtip',
+    buttons: [
+      { extend: 'copy',       text: '<i class="bx bx-copy me-1"></i>Copiar',    className: 'btn btn-sm btn-outline-secondary' },
+      { extend: 'csv',        text: '<i class="bx bx-download me-1"></i>CSV',   className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'excel',      text: '<i class="bx bxs-file-export me-1"></i>Excel', className: 'btn btn-sm btn-outline-success',   exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'pdf',        text: '<i class="bx bxs-file-pdf me-1"></i>PDF',  className: 'btn btn-sm btn-outline-danger',    exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'print',      text: '<i class="bx bx-printer me-1"></i>Imprimir', className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } }
+    ],
+    columnDefs: [
+      { orderable: false, targets: [8] },
+      { className: 'align-middle', targets: '_all' }
+    ],
+    order: [[6, 'desc']]
+  });
+
+  $('.filtro-estado').on('click', function() {
+    $('.filtro-estado').removeClass('active');
+    $(this).addClass('active');
+    tabla.column(4).search($(this).data('estado')).draw();
+  });
+
+  $(document).on('click', '.btn-eliminar', function() {
+    var titulo = $(this).data('titulo');
+    var url    = $(this).data('url');
+    Swal.fire({
+      title: '¿Eliminar publicación?',
+      html: 'Eliminarás: <strong>"' + titulo + '"</strong>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3e1d',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) {
+      if (r.isConfirmed) {
+        var form = document.getElementById('formEliminar');
+        form.action = url;
+        form.submit();
+      }
+    });
+  });
+
+});
+</script>
+{% endblock %}

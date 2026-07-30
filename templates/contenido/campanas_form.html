@@ -1,0 +1,220 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}{% if campana %}Editar Campaña{% else %}Nueva Campaña{% endif %}{% endblock %}
+{% block page_title %}<i class="bx bx-bullseye me-2"></i> {% if campana %}Editar Campaña{% else %}Nueva Campaña{% endif %}{% endblock %}
+{% block menu_campanas %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  label.error { color: #ff3e1d; font-size: 0.8rem; margin-top: 4px; display: block; }
+  input.error { border-color: #ff3e1d !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb breadcrumb-style1">
+    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'contenido:campanas_list' %}">Campañas</a></li>
+    <li class="breadcrumb-item active">{% if campana %}{{ campana.nombre }}{% else %}Nueva{% endif %}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+
+  <div class="col-12 col-lg-8">
+    <form method="post" id="formCampana">
+      {% csrf_token %}
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-bullseye me-2 text-primary"></i>Datos de la Campaña</h5>
+        </div>
+        <div class="card-body">
+
+          <div class="mb-4">
+            <label for="id_nombre" class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+            <input type="text" id="id_nombre" name="nombre"
+              class="form-control {% if form.nombre.errors %}is-invalid{% endif %}"
+              value="{{ form.nombre.value|default:'' }}" maxlength="100" autofocus />
+            {% if form.nombre.errors %}
+              <div class="invalid-feedback">{{ form.nombre.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <label for="id_descripcion" class="form-label fw-semibold">Descripción <small class="text-muted fw-normal">(opcional)</small></label>
+            <textarea id="id_descripcion" name="descripcion" class="form-control" rows="3">{{ form.descripcion.value|default:'' }}</textarea>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label for="id_fecha_inicio" class="form-label fw-semibold">Inicio <span class="text-danger">*</span></label>
+              <input type="date" id="id_fecha_inicio" name="fecha_inicio"
+                class="form-control {% if form.fecha_inicio.errors %}is-invalid{% endif %}"
+                value="{{ form.fecha_inicio.value|date:'Y-m-d'|default:'' }}" />
+              {% if form.fecha_inicio.errors %}
+                <div class="invalid-feedback">{{ form.fecha_inicio.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="col-6">
+              <label for="id_fecha_fin" class="form-label fw-semibold">Fin <span class="text-danger">*</span></label>
+              <input type="date" id="id_fecha_fin" name="fecha_fin"
+                class="form-control {% if form.fecha_fin.errors %}is-invalid{% endif %}"
+                value="{{ form.fecha_fin.value|date:'Y-m-d'|default:'' }}" />
+              {% if form.fecha_fin.errors %}
+                <div class="invalid-feedback">{{ form.fecha_fin.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div id="duracion-info" class="alert alert-primary py-2 d-none">
+            <i class="bx bx-calendar me-1"></i>
+            <span id="duracion-texto"></span>
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="id_activa" name="activa"
+              {% if form.activa.value or not campana %}checked{% endif %} />
+            <label class="form-check-label fw-semibold" for="id_activa">Campaña activa</label>
+          </div>
+
+        </div>
+        <div class="card-footer d-flex gap-2">
+          <button type="submit" class="btn btn-primary fw-semibold" id="btnGuardar">
+            <i class="bx bx-save me-2"></i>{% if campana %}Actualizar{% else %}Crear{% endif %} Campaña
+          </button>
+          <a href="{% url 'contenido:campanas_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    {% if campana %}
+    <div class="card mb-4">
+      <div class="card-header"><h5 class="card-title mb-0">Resumen</h5></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Estado</span>
+          {% if campana.activa %}<span class="badge bg-success">Activa</span>
+          {% else %}<span class="badge bg-secondary">Inactiva</span>{% endif %}
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Publicaciones</span>
+          <span class="badge bg-label-primary">{{ campana.publicaciones.count }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Inicio</span>
+          <span class="fw-semibold small">{{ campana.fecha_inicio|date:"d M Y" }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted small">Fin</span>
+          <span class="fw-semibold small">{{ campana.fecha_fin|date:"d M Y" }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="card border-danger">
+      <div class="card-header bg-label-danger">
+        <h6 class="card-title mb-0 text-danger"><i class="bx bx-error-circle me-2"></i>Zona de peligro</h6>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">Eliminar la campaña no borrará sus publicaciones.</p>
+        <button type="button" class="btn btn-outline-danger btn-sm w-100" id="btnEliminarCampana"
+          data-nombre="{{ campana.nombre|escapejs }}"
+          data-url="{% url 'contenido:campanas_delete' campana.pk %}">
+          <i class="bx bx-trash me-2"></i>Eliminar campaña
+        </button>
+      </div>
+    </div>
+    {% else %}
+    <div class="card bg-label-info border-0">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-2"><i class="bx bx-bulb me-2"></i>Consejos</h6>
+        <ul class="small text-muted ps-3 mb-0">
+          <li class="mb-1">Define fechas realistas con tiempo de producción.</li>
+          <li class="mb-1">Usa nombres descriptivos como "Campaña Navidad 2026".</li>
+          <li>Marca como inactiva las campañas finalizadas.</li>
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% if campana %}
+<form id="formEliminarCampana" method="post" action="{% url 'contenido:campanas_delete' campana.pk %}" style="display:none;">
+  {% csrf_token %}
+</form>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+
+  $.validator.addMethod('fechaFin', function(value, element) {
+    var inicio = $('#id_fecha_inicio').val();
+    return !inicio || !value || value > inicio;
+  }, 'La fecha de fin debe ser posterior a la de inicio.');
+
+  $.validator.setDefaults({
+    errorElement: 'label',
+    errorClass: 'error',
+    highlight: function(el) { $(el).addClass('is-invalid'); },
+    unhighlight: function(el) { $(el).removeClass('is-invalid'); }
+  });
+
+  $('#formCampana').validate({
+    rules: {
+      nombre:       { required: true, maxlength: 100 },
+      fecha_inicio: { required: true },
+      fecha_fin:    { required: true, fechaFin: true }
+    },
+    messages: {
+      nombre:       { required: 'El nombre es obligatorio.' },
+      fecha_inicio: { required: 'La fecha de inicio es obligatoria.' },
+      fecha_fin:    { required: 'La fecha de fin es obligatoria.' }
+    },
+    submitHandler: function(form) {
+      $('#btnGuardar').prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm me-2"></span>Guardando...');
+      form.submit();
+    }
+  });
+
+  function mostrarDuracion() {
+    var inicio = $('#id_fecha_inicio').val();
+    var fin    = $('#id_fecha_fin').val();
+    if (!inicio || !fin || fin <= inicio) { $('#duracion-info').addClass('d-none'); return; }
+    var dias = Math.ceil((new Date(fin) - new Date(inicio)) / 86400000);
+    $('#duracion-texto').text(dias + ' día' + (dias !== 1 ? 's' : '') + ' de duración');
+    $('#duracion-info').removeClass('d-none');
+  }
+
+  $('#id_fecha_inicio, #id_fecha_fin').on('change', mostrarDuracion);
+  mostrarDuracion();
+
+  $('#btnEliminarCampana').on('click', function() {
+    var nombre = $(this).data('nombre');
+    Swal.fire({
+      title: 'Eliminar campaña',
+      html: '¿Eliminar <strong>"' + nombre + '"</strong>?<br><small class="text-muted">Las publicaciones no se eliminarán.</small>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3e1d',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) {
+      if (r.isConfirmed) $('#formEliminarCampana').submit();
+    });
+  });
+
+});
+</script>
+{% endblock %}

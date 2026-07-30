@@ -1,0 +1,208 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}Campañas{% endblock %}
+{% block page_title %}<i class="bx bx-bullseye me-2"></i> Campañas{% endblock %}
+{% block menu_campanas %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dt-button { font-size: 0.8rem !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1">Campañas</h4>
+    <p class="text-muted mb-0 small">Organiza tu contenido en campañas con fechas de inicio y fin.</p>
+  </div>
+  <a href="{% url 'contenido:campanas_create' %}" class="btn btn-primary">
+    <i class="bx bx-plus me-1"></i> Nueva Campaña
+  </a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body py-3">
+        <h3 class="fw-bold text-primary mb-1">{{ campanas|length }}</h3>
+        <small class="text-muted">Total</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body py-3">
+        <h3 class="fw-bold text-success mb-1" id="stat-activas">—</h3>
+        <small class="text-muted">Activas</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body py-3">
+        <h3 class="fw-bold text-secondary mb-1" id="stat-finalizadas">—</h3>
+        <small class="text-muted">Inactivas</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center">
+      <div class="card-body py-3">
+        <h3 class="fw-bold text-info mb-1" id="stat-posts">—</h3>
+        <small class="text-muted">Posts en campañas</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h5 class="card-title mb-0">Listado de Campañas</h5>
+    <div class="btn-group btn-group-sm">
+      <button type="button" class="btn btn-outline-secondary filtro-activa active" data-valor="">Todas</button>
+      <button type="button" class="btn btn-outline-success filtro-activa" data-valor="Activa">Activas</button>
+      <button type="button" class="btn btn-outline-secondary filtro-activa" data-valor="Inactiva">Inactivas</button>
+    </div>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tablaCampanas" class="table table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th class="text-center">Posts</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for campana in campanas %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><span class="fw-semibold">{{ campana.nombre }}</span></td>
+          <td><span class="text-muted small">{{ campana.descripcion|truncatechars:60|default:"—" }}</span></td>
+          <td class="text-nowrap">{{ campana.fecha_inicio|date:"d M Y" }}</td>
+          <td class="text-nowrap">{{ campana.fecha_fin|date:"d M Y" }}</td>
+          <td class="text-center">
+            <a href="{% url 'contenido:publicaciones_list' %}?campana={{ campana.pk }}"
+               class="badge bg-label-info text-decoration-none">
+              {{ campana.publicaciones.count }}
+            </a>
+          </td>
+          <td class="text-center">
+            {% if campana.activa %}
+              <span class="badge bg-success">Activa</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactiva</span>
+            {% endif %}
+          </td>
+          <td class="text-center text-nowrap">
+            <a href="{% url 'contenido:campanas_edit' campana.pk %}"
+               class="btn btn-sm btn-outline-primary me-1" title="Editar">
+              <i class="bx bx-edit"></i>
+            </a>
+            <button type="button"
+              class="btn btn-sm btn-outline-danger btn-eliminar-campana"
+              data-nombre="{{ campana.nombre|escapejs }}"
+              data-pubs="{{ campana.publicaciones.count }}"
+              data-url="{% url 'contenido:campanas_delete' campana.pk %}">
+              <i class="bx bx-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not campanas %}
+    <div class="text-center py-5">
+      <i class="bx bx-bullseye bx-lg text-muted d-block mb-3 opacity-25"></i>
+      <p class="text-muted mb-2">No hay campañas registradas.</p>
+      <a href="{% url 'contenido:campanas_create' %}" class="btn btn-primary btn-sm">
+        <i class="bx bx-plus me-1"></i> Crear primera campaña
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<form id="formEliminarCampana" method="post" style="display:none;">
+  {% csrf_token %}
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+
+  var tabla = $('#tablaCampanas').DataTable({
+    pageLength: 10,
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+    dom: '<"d-flex align-items-center justify-content-between mb-3"lB>frtip',
+    buttons: [
+      { extend: 'copy',  text: '<i class="bx bx-copy me-1"></i>Copiar',     className: 'btn btn-sm btn-outline-secondary' },
+      { extend: 'csv',   text: '<i class="bx bx-download me-1"></i>CSV',    className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'excel', text: '<i class="bx bxs-file-export me-1"></i>Excel', className: 'btn btn-sm btn-outline-success',  exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'pdf',   text: '<i class="bx bxs-file-pdf me-1"></i>PDF',   className: 'btn btn-sm btn-outline-danger',   exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'print', text: '<i class="bx bx-printer me-1"></i>Imprimir',className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } }
+    ],
+    columnDefs: [
+      { orderable: false, targets: [7] },
+      { className: 'align-middle', targets: '_all' }
+    ],
+    order: [[3, 'asc']]
+  });
+
+  var activas = 0, finalizadas = 0, totalPosts = 0;
+  $('#tablaCampanas tbody tr').each(function() {
+    var estado = $(this).find('td:eq(6) span').text().trim();
+    var posts  = parseInt($(this).find('td:eq(5) a').text().trim()) || 0;
+    if (estado === 'Activa') activas++;
+    else finalizadas++;
+    totalPosts += posts;
+  });
+  $('#stat-activas').text(activas);
+  $('#stat-finalizadas').text(finalizadas);
+  $('#stat-posts').text(totalPosts);
+
+  $('.filtro-activa').on('click', function() {
+    $('.filtro-activa').removeClass('active');
+    $(this).addClass('active');
+    tabla.column(6).search($(this).data('valor')).draw();
+  });
+
+  $(document).on('click', '.btn-eliminar-campana', function() {
+    var nombre = $(this).data('nombre');
+    var pubs   = parseInt($(this).data('pubs'));
+    var url    = $(this).data('url');
+    var aviso  = pubs > 0
+      ? '<br><small class="text-muted">Las ' + pubs + ' publicaciones no se eliminarán, solo quedarán sin campaña.</small>'
+      : '';
+    Swal.fire({
+      title: 'Eliminar campaña',
+      html: '¿Eliminar <strong>"' + nombre + '"</strong>?' + aviso,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3e1d',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) {
+      if (r.isConfirmed) {
+        var form = document.getElementById('formEliminarCampana');
+        form.action = url;
+        form.submit();
+      }
+    });
+  });
+
+});
+</script>
+{% endblock %}

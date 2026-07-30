@@ -1,0 +1,176 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}{% if canal %}Editar Canal{% else %}Nuevo Canal{% endif %}{% endblock %}
+{% block page_title %}<i class="bx bx-broadcast me-2"></i> {% if canal %}Editar Canal{% else %}Nuevo Canal{% endif %}{% endblock %}
+{% block menu_canales %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  .icon-preview {
+    width: 80px; height: 80px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem;
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+  }
+  label.error { color: #ff3e1d; font-size: 0.8rem; margin-top: 4px; display: block; }
+  input.error { border-color: #ff3e1d !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb breadcrumb-style1">
+    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'contenido:canales_list' %}">Canales</a></li>
+    <li class="breadcrumb-item active">{% if canal %}{{ canal.nombre }}{% else %}Nuevo Canal{% endif %}</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <form method="post" id="formCanal">
+      {% csrf_token %}
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="bx bx-broadcast me-2 text-primary"></i>{% if canal %}Editar{% else %}Nuevo{% endif %} Canal
+          </h5>
+        </div>
+        <div class="card-body">
+
+          <div class="text-center mb-4">
+            <div class="icon-preview mx-auto mb-2" id="iconPreview">
+              <i id="iconPreviewI" class="{{ canal.icono|default:'bx bx-broadcast' }}"></i>
+            </div>
+            <small class="text-muted">Vista previa del ícono</small>
+          </div>
+
+          <div class="mb-4">
+            <label for="id_nombre" class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+            <input type="text" id="id_nombre" name="nombre"
+              class="form-control {% if form.nombre.errors %}is-invalid{% endif %}"
+              value="{{ form.nombre.value|default:'' }}" maxlength="50" autofocus />
+            {% if form.nombre.errors %}
+              <div class="invalid-feedback">{{ form.nombre.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_icono" class="form-label fw-semibold">Clase CSS del Ícono <small class="text-muted fw-normal">(opcional)</small></label>
+            <div class="input-group">
+              <span class="input-group-text"><i id="inputIconDisplay" class="{{ canal.icono|default:'bx bx-broadcast' }}"></i></span>
+              <input type="text" id="id_icono" name="icono" class="form-control"
+                placeholder="Ej: fab fa-instagram" value="{{ form.icono.value|default:'' }}" maxlength="50" />
+            </div>
+            <small class="text-muted">
+              <a href="https://fontawesome.com/icons" target="_blank">Font Awesome</a> o
+              <a href="https://boxicons.com" target="_blank">Boxicons</a>
+            </small>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold small text-muted">Íconos sugeridos:</label>
+            <div class="d-flex flex-wrap gap-2" id="sugerencias">
+              {% for icono_s, nombre_s in iconos_sugeridos %}
+              <button type="button" class="btn btn-sm btn-outline-secondary sugerencia-icono"
+                data-icono="{{ icono_s }}" data-nombre="{{ nombre_s }}" title="{{ nombre_s }}">
+                <i class="{{ icono_s }}"></i>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1 fw-semibold">
+              <i class="bx bx-save me-2"></i>{% if canal %}Actualizar{% else %}Crear{% endif %} Canal
+            </button>
+            <a href="{% url 'contenido:canales_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+
+          {% if canal %}
+          <hr class="my-3" />
+          <button type="button" class="btn btn-outline-danger w-100 btn-sm" id="btnEliminarCanal"
+            data-nombre="{{ canal.nombre|escapejs }}"
+            data-pubs="{{ canal.publicaciones.count }}"
+            data-url="{% url 'contenido:canales_delete' canal.pk %}">
+            <i class="bx bx-trash me-2"></i>Eliminar canal
+          </button>
+          {% endif %}
+
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if canal %}
+<form id="formEliminarCanal" method="post" action="{% url 'contenido:canales_delete' canal.pk %}" style="display:none;">
+  {% csrf_token %}
+</form>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+
+  $.validator.setDefaults({
+    errorElement: 'label',
+    errorClass: 'error',
+    highlight: function(el) { $(el).addClass('is-invalid'); },
+    unhighlight: function(el) { $(el).removeClass('is-invalid'); }
+  });
+
+  $('#formCanal').validate({
+    rules: {
+      nombre: { required: true, maxlength: 50 }
+    },
+    messages: {
+      nombre: { required: 'El nombre del canal es obligatorio.', maxlength: 'Máximo 50 caracteres.' }
+    }
+  });
+
+  function actualizarIcono(clase) {
+    var c = clase.trim() || 'bx bx-broadcast';
+    $('#iconPreviewI').attr('class', c);
+    $('#inputIconDisplay').attr('class', c);
+  }
+
+  $('#id_icono').on('input', function() { actualizarIcono($(this).val()); });
+
+  $('.sugerencia-icono').on('click', function() {
+    var icono  = $(this).data('icono');
+    var nombre = $(this).data('nombre');
+    $('#id_icono').val(icono);
+    actualizarIcono(icono);
+    if (!$('#id_nombre').val()) $('#id_nombre').val(nombre);
+  });
+
+  $('#btnEliminarCanal').on('click', function() {
+    var nombre = $(this).data('nombre');
+    var pubs   = parseInt($(this).data('pubs'));
+    var aviso  = pubs > 0
+      ? '<br><small class="text-danger">Este canal tiene ' + pubs + ' publicación(es) asociada(s) que también se eliminarán.</small>'
+      : '';
+    Swal.fire({
+      title: 'Eliminar canal',
+      html: '¿Eliminar <strong>"' + nombre + '"</strong>?' + aviso,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3e1d',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) {
+      if (r.isConfirmed) $('#formEliminarCanal').submit();
+    });
+  });
+
+});
+</script>
+{% endblock %}

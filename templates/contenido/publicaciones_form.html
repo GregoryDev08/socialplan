@@ -1,0 +1,290 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}{% if publicacion %}Editar{% else %}Nueva{% endif %} Publicación{% endblock %}
+{% block page_title %}<i class="bx bx-file me-2"></i> {% if publicacion %}Editar Publicación{% else %}Nueva Publicación{% endif %}{% endblock %}
+{% block menu_publicaciones %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  .preview-imagen { max-height: 200px; object-fit: cover; border-radius: 8px; width: 100%; }
+  .required-mark { color: #ff3e1d; }
+  label.error { color: #ff3e1d; font-size: 0.8rem; margin-top: 4px; display: block; }
+  input.error, select.error, textarea.error { border-color: #ff3e1d !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb breadcrumb-style1">
+    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'contenido:publicaciones_list' %}">Publicaciones</a></li>
+    <li class="breadcrumb-item active">{% if publicacion %}Editar{% else %}Nueva{% endif %}</li>
+  </ol>
+</nav>
+
+<form method="post" enctype="multipart/form-data" id="formPublicacion">
+  {% csrf_token %}
+  {% if not publicacion %}
+    <input type="hidden" name="engagement_rate" value="0.0" />
+    <input type="hidden" name="clics" value="0" />
+  {% endif %}
+  <div class="row g-4">
+
+    <div class="col-12 col-lg-8">
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-edit me-2 text-primary"></i>Contenido</h5>
+        </div>
+        <div class="card-body">
+
+          <div class="mb-3">
+            <label for="id_titulo" class="form-label fw-semibold">Título <span class="required-mark">*</span></label>
+            <input type="text" id="id_titulo" name="titulo"
+              class="form-control {% if form.titulo.errors %}is-invalid{% endif %}"
+              value="{{ form.titulo.value|default:'' }}" maxlength="200" />
+            {% if form.titulo.errors %}
+              <div class="invalid-feedback">{{ form.titulo.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_contenido" class="form-label fw-semibold">Texto / Descripción</label>
+            <textarea id="id_contenido" name="contenido"
+              class="form-control {% if form.contenido.errors %}is-invalid{% endif %}"
+              rows="6">{{ form.contenido.value|default:'' }}</textarea>
+          </div>
+
+          {% if publicacion %}
+          <div class="row g-3">
+            <div class="col-6">
+              <label for="id_engagement_rate" class="form-label fw-semibold">Engagement Rate (%)</label>
+              <div class="input-group">
+                <input type="number" id="id_engagement_rate" name="engagement_rate"
+                  class="form-control" step="0.01" min="0" max="100"
+                  value="{{ form.engagement_rate.value|default:'0.0' }}" />
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <label for="id_clics" class="form-label fw-semibold">Clics</label>
+              <input type="number" id="id_clics" name="clics"
+                class="form-control" min="0" value="{{ form.clics.value|default:'0' }}" />
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-image me-2 text-info"></i>Imagen Destacada</h5>
+        </div>
+        <div class="card-body">
+          {% if publicacion.imagen %}
+          <div class="mb-3">
+            <label class="form-label text-muted small">Imagen actual:</label>
+            <img src="{{ publicacion.imagen.url }}" class="preview-imagen d-block" alt="Imagen actual" />
+            <div class="form-check mt-2">
+              <input type="checkbox" class="form-check-input" id="borrarImagen" name="imagen-clear" />
+              <label class="form-check-label text-danger small" for="borrarImagen">Eliminar imagen actual</label>
+            </div>
+          </div>
+          {% endif %}
+          <div id="preview-nueva" class="mb-3 d-none">
+            <label class="form-label text-muted small">Vista previa:</label>
+            <img id="imgPreviewNueva" src="#" class="preview-imagen d-block" alt="Preview" />
+          </div>
+          <input type="file" id="id_imagen" name="imagen" class="form-control"
+            accept="image/png,image/jpeg,image/gif,image/webp" />
+          <small class="text-muted">JPG, PNG, GIF, WEBP. Recomendado: 1200×630 px</small>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-12 col-lg-4">
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-flag me-2 text-warning"></i>Estado</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-column gap-2">
+            {% for valor, etiqueta in form.estado.field.choices %}
+            <div>
+              <input type="radio" class="btn-check" name="estado" id="estado_{{ valor }}" value="{{ valor }}"
+                {% if form.estado.value == valor %}checked
+                {% elif publicacion.estado == valor %}checked
+                {% elif not publicacion and valor == 'borrador' %}checked{% endif %} />
+              <label class="btn btn-outline-secondary w-100 text-start" for="estado_{{ valor }}">
+                {% if valor == 'borrador' %}<i class="bx bx-edit me-2 text-secondary"></i>
+                {% elif valor == 'revision' %}<i class="bx bx-time me-2 text-warning"></i>
+                {% elif valor == 'aprobado' %}<i class="bx bx-check me-2 text-primary"></i>
+                {% elif valor == 'publicado' %}<i class="bx bx-check-circle me-2 text-success"></i>
+                {% endif %}{{ etiqueta }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          {% if user_role != 'aprobador' %}
+          <div class="mt-3 text-muted small">
+            Las opciones de estado están limitadas según tu rol. Solo aprobadores pueden aprobar o publicar contenidos.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-broadcast me-2 text-primary"></i>Canal y Campaña</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="id_canal" class="form-label fw-semibold">Canal <span class="required-mark">*</span></label>
+            <select id="id_canal" name="canal" class="form-select {% if form.canal.errors %}is-invalid{% endif %}">
+              <option value="">— Selecciona un canal —</option>
+              {% for c in canales %}
+              <option value="{{ c.pk }}"
+                {% if form.canal.value|stringformat:"s" == c.pk|stringformat:"s" %}selected
+                {% elif publicacion.canal_id == c.pk %}selected{% endif %}>{{ c.nombre }}</option>
+              {% endfor %}
+            </select>
+            {% if form.canal.errors %}
+              <div class="invalid-feedback">{{ form.canal.errors|join:", " }}</div>
+            {% endif %}
+            <a href="{% url 'contenido:canales_create' %}" class="small text-primary mt-1 d-block" target="_blank">
+              <i class="bx bx-plus-circle me-1"></i>Añadir canal nuevo
+            </a>
+          </div>
+          <div class="mb-0">
+            <label for="id_campana" class="form-label fw-semibold">Campaña <small class="text-muted fw-normal">(opcional)</small></label>
+            <select id="id_campana" name="campana" class="form-select">
+              <option value="">— Sin campaña —</option>
+              {% for camp in campanas %}
+              <option value="{{ camp.pk }}"
+                {% if form.campana.value|stringformat:"s" == camp.pk|stringformat:"s" %}selected
+                {% elif publicacion.campana_id == camp.pk %}selected{% endif %}>{{ camp.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-calendar me-2 text-success"></i>Programación</h5>
+        </div>
+        <div class="card-body">
+          <label for="id_fecha_publicacion" class="form-label fw-semibold">Fecha y hora <span class="required-mark">*</span></label>
+          <input type="datetime-local" id="id_fecha_publicacion" name="fecha_publicacion"
+            class="form-control {% if form.fecha_publicacion.errors %}is-invalid{% endif %}"
+            value="{{ form.fecha_publicacion.value|date:'Y-m-d\TH:i'|default:'' }}" />
+          {% if form.fecha_publicacion.errors %}
+            <div class="invalid-feedback">{{ form.fecha_publicacion.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bx bx-group me-2 text-info"></i>Equipo</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="id_redactor" class="form-label fw-semibold">Redactor</label>
+            <select id="id_redactor" name="redactor" class="form-select">
+              <option value="">— Sin asignar —</option>
+              {% for u in usuarios %}
+              <option value="{{ u.pk }}"
+                {% if form.redactor.value|stringformat:"s" == u.pk|stringformat:"s" %}selected
+                {% elif publicacion.redactor_id == u.pk %}selected{% endif %}>
+                {{ u.get_full_name|default:u.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-0">
+            <label for="id_disenador" class="form-label fw-semibold">Diseñador</label>
+            <select id="id_disenador" name="disenador" class="form-select">
+              <option value="">— Sin asignar —</option>
+              {% for u in usuarios %}
+              <option value="{{ u.pk }}"
+                {% if form.disenador.value|stringformat:"s" == u.pk|stringformat:"s" %}selected
+                {% elif publicacion.disenador_id == u.pk %}selected{% endif %}>
+                {{ u.get_full_name|default:u.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg fw-semibold" id="btnGuardar">
+          <i class="bx bx-save me-2"></i>{% if publicacion %}Actualizar{% else %}Crear{% endif %} Publicación
+        </button>
+        <a href="{% url 'contenido:publicaciones_list' %}" class="btn btn-outline-secondary">
+          <i class="bx bx-x me-2"></i>Cancelar
+        </a>
+        {% if publicacion %}
+        <hr class="my-1" />
+        <button type="button" class="btn btn-outline-danger btn-sm" id="btnEliminar"
+          data-titulo="{{ publicacion.titulo|escapejs }}"
+          data-url="{% url 'contenido:publicaciones_delete' publicacion.pk %}">
+          <i class="bx bx-trash me-2"></i>Eliminar publicación
+        </button>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</form>
+
+{% if publicacion %}
+<form id="formEliminar" method="post" action="{% url 'contenido:publicaciones_delete' publicacion.pk %}" style="display:none;">
+  {% csrf_token %}
+</form>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+  $.validator.setDefaults({ errorElement: 'label', errorClass: 'error', highlight: function(el) { $(el).addClass('is-invalid') }, unhighlight: function(el) { $(el).removeClass('is-invalid') } })
+
+  $('#formPublicacion').validate({
+    rules: { titulo: { required: true, maxlength: 200 }, canal: { required: true }, fecha_publicacion: { required: true } },
+    messages: { titulo: { required: 'El título es obligatorio.', maxlength: 'Máximo 200 caracteres.' }, canal: { required: 'Debes seleccionar un canal.' }, fecha_publicacion: { required: 'La fecha de publicación es obligatoria.' } },
+    submitHandler: function(form) { $('#btnGuardar').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Guardando...'); form.submit() }
+  })
+
+  $('#id_imagen').on('change', function() {
+    var file = this.files[0]
+    if (!file) return
+    var reader = new FileReader()
+    reader.onload = function(e) { $('#imgPreviewNueva').attr('src', e.target.result); $('#preview-nueva').removeClass('d-none') }
+    reader.readAsDataURL(file)
+  })
+
+  $('#btnEliminar').on('click', function() {
+    var titulo = $(this).data('titulo')
+    Swal.fire({
+      title: '¿Eliminar publicación?',
+      html: 'Eliminarás: <strong>"' + titulo + '"</strong>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3e1d',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) { if (r.isConfirmed) $('#formEliminar').submit() })
+  })
+
+  hotkeys('alt+s', function(e) { e.preventDefault(); $('#formPublicacion').submit() })
+})
+</script>
+{% endblock %}

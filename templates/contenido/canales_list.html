@@ -1,0 +1,174 @@
+{% extends "plantillaPrincipal.html" %}
+{% load static %}
+
+{% block title %}Canales{% endblock %}
+{% block page_title %}<i class="bx bx-broadcast me-2"></i> Canales{% endblock %}
+{% block menu_canales %}active open{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dt-button { font-size: 0.8rem !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1">Canales</h4>
+    <p class="text-muted mb-0 small">Administra tus redes sociales y plataformas de publicación.</p>
+  </div>
+  <a href="{% url 'contenido:canales_create' %}" class="btn btn-primary">
+    <i class="bx bx-plus me-1"></i> Nuevo Canal
+  </a>
+</div>
+
+<div class="row g-4 mb-4">
+  {% for canal in canales %}
+  <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body text-center py-4">
+        <div class="mx-auto mb-3"
+             style="width:64px;height:64px;background:var(--bs-primary-bg-subtle);border-radius:14px;display:flex;align-items:center;justify-content:center;">
+          <i class="{{ canal.icono|default:'bx bx-broadcast' }}" style="font-size:2rem;color:var(--bs-primary);"></i>
+        </div>
+        <h5 class="card-title mb-1 fw-bold">{{ canal.nombre }}</h5>
+        <p class="text-muted small mb-3">
+          <span class="badge bg-label-secondary">{{ canal.publicaciones.count }} publicación{{ canal.publicaciones.count|pluralize:"es" }}</span>
+        </p>
+        {% if canal.icono %}<code class="small text-muted d-block mb-3">{{ canal.icono }}</code>{% endif %}
+        <div class="d-flex gap-2 justify-content-center">
+          <a href="{% url 'contenido:canales_edit' canal.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bx bx-edit me-1"></i> Editar
+          </a>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-canal"
+            data-nombre="{{ canal.nombre|escapejs }}"
+            data-pubs="{{ canal.publicaciones.count }}"
+            data-url="{% url 'contenido:canales_delete' canal.pk %}">
+            <i class="bx bx-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <i class="bx bx-broadcast bx-lg text-muted d-block mb-3 opacity-25"></i>
+        <h5 class="text-muted mb-2">No hay canales configurados</h5>
+        <a href="{% url 'contenido:canales_create' %}" class="btn btn-primary">
+          <i class="bx bx-plus me-1"></i> Crear primer canal
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if canales %}
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Resumen de Canales</h5>
+  </div>
+  <div class="card-datatable table-responsive">
+    <table id="tablaCanales" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Canal</th>
+          <th>Ícono CSS</th>
+          <th class="text-center">Publicaciones</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for canal in canales %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;"
+                   class="rounded-circle bg-label-primary">
+                <i class="{{ canal.icono|default:'bx bx-broadcast' }}"></i>
+              </div>
+              <span class="fw-semibold">{{ canal.nombre }}</span>
+            </div>
+          </td>
+          <td>{% if canal.icono %}<code class="small">{{ canal.icono }}</code>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="text-center"><span class="badge bg-label-primary rounded-pill">{{ canal.publicaciones.count }}</span></td>
+          <td class="text-center text-nowrap">
+            <a href="{% url 'contenido:canales_edit' canal.pk %}" class="btn btn-sm btn-outline-primary me-1">
+              <i class="bx bx-edit"></i>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-canal"
+              data-nombre="{{ canal.nombre|escapejs }}"
+              data-pubs="{{ canal.publicaciones.count }}"
+              data-url="{% url 'contenido:canales_delete' canal.pk %}">
+              <i class="bx bx-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<form id="formEliminarCanal" method="post" style="display:none;">
+  {% csrf_token %}
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+
+  {% if canales %}
+  $('#tablaCanales').DataTable({
+    pageLength: 10,
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+    dom: '<"d-flex align-items-center justify-content-between mb-3"lB>frtip',
+    buttons: [
+      { extend: 'copy',  text: '<i class="bx bx-copy me-1"></i>Copiar',      className: 'btn btn-sm btn-outline-secondary' },
+      { extend: 'csv',   text: '<i class="bx bx-download me-1"></i>CSV',     className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'excel', text: '<i class="bx bxs-file-export me-1"></i>Excel', className: 'btn btn-sm btn-outline-success',  exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'pdf',   text: '<i class="bx bxs-file-pdf me-1"></i>PDF',    className: 'btn btn-sm btn-outline-danger',   exportOptions: { columns: ':not(:last-child)' } },
+      { extend: 'print', text: '<i class="bx bx-printer me-1"></i>Imprimir', className: 'btn btn-sm btn-outline-secondary', exportOptions: { columns: ':not(:last-child)' } }
+    ],
+    columnDefs: [
+      { orderable: false, targets: [3] },
+      { className: 'align-middle', targets: '_all' }
+    ]
+  });
+  {% endif %}
+
+  $(document).on('click', '.btn-eliminar-canal', function() {
+    var nombre = $(this).data('nombre');
+    var pubs   = parseInt($(this).data('pubs'));
+    var url    = $(this).data('url');
+    var aviso  = pubs > 0
+      ? '<br><small class="text-danger">Este canal tiene ' + pubs + ' publicación(es) que también se eliminarán.</small>'
+      : '';
+    Swal.fire({
+      title: 'Eliminar canal',
+      html: '¿Eliminar <strong>"' + nombre + '"</strong>?' + aviso,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3e1d',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(function(r) {
+      if (r.isConfirmed) {
+        var form = document.getElementById('formEliminarCanal');
+        form.action = url;
+        form.submit();
+      }
+    });
+  });
+
+});
+</script>
+{% endblock %}
