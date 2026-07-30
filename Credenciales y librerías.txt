@@ -1,7 +1,7 @@
 Credenciales de Prueba
    - Redactor (Gregory):
      Usuario: gregory
-     Contraseña: 123456
+     Contraseña: Grego1234
 
    - Diseñador (Matías):
      Usuario: Matias
