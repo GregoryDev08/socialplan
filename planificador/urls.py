@@ -10,6 +10,7 @@ urlpatterns = [
     path('',login_required(inicio_view),name='inicio'),
     path('contenido/',include('contenido.urls')),
     path('cuentas/',include('cuentas.urls')),
+    path('', include('pwa.urls')),
 ]
 
 if settings.DEBUG:
