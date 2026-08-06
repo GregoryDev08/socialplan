@@ -212,7 +212,7 @@
 
               <!-- Botón Instalar App PWA -->
               <li class="nav-item" id="nav-item-instalar-app">
-                <button class="btn btn-sm btn-success" id="btn-instalar-app" title="Instalar SocialPlan como aplicación" disabled>
+                <button class="btn btn-sm btn-success" id="btn-instalar-app" title="Instalar SocialPlan como aplicación">
                   <i class="bx bx-download me-1"></i> Instalar App
                 </button>
               </li>
@@ -518,43 +518,44 @@
       let deferredPrompt = null
       const btnInstalarApp = document.getElementById('btn-instalar-app')
 
-      if (btnInstalarApp) {
-        btnInstalarApp.disabled = true
+      function showInstallInstructions() {
+        const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+        const instruction = isiOS
+          ? 'Para instalar SocialPlan en iOS, pulsa el botón Compartir y elige "Agregar a pantalla de inicio".'
+          : 'Para instalar SocialPlan, usa el menú del navegador y selecciona "Instalar" o "Agregar a pantalla de inicio".'
+
+        Swal.fire({
+          icon: 'info',
+          title: 'Instalación de PWA',
+          html: instruction,
+          confirmButtonText: 'Entendido'
+        })
       }
 
       window.addEventListener('beforeinstallprompt', function(event) {
         event.preventDefault()
         deferredPrompt = event
-
         if (btnInstalarApp) {
-          btnInstalarApp.disabled = false
           btnInstalarApp.setAttribute('title', 'Instalar SocialPlan como aplicación')
         }
       })
 
       if (btnInstalarApp) {
         btnInstalarApp.addEventListener('click', async function() {
-          if (!deferredPrompt) {
-            Swal.fire({
-              icon: 'info',
-              title: 'Instalación no disponible',
-              text: 'Tu navegador aún no ha solicitado la instalación PWA.',
-              confirmButtonText: 'Aceptar'
-            })
-            return
-          }
+          if (deferredPrompt) {
+            deferredPrompt.prompt()
+            const choiceResult = await deferredPrompt.userChoice
 
-          deferredPrompt.prompt()
-          const choiceResult = await deferredPrompt.userChoice
+            if (choiceResult.outcome === 'accepted') {
+              Swal.fire({ icon: 'success', title: 'App instalada', text: 'SocialPlan se instaló correctamente.' })
+            } else {
+              Swal.fire({ icon: 'info', title: 'Instalación cancelada', text: 'Puedes instalar la app más tarde desde el menú del navegador.' })
+            }
 
-          if (choiceResult.outcome === 'accepted') {
-            console.log('PWA installation accepted')
+            deferredPrompt = null
           } else {
-            console.log('PWA installation dismissed')
+            showInstallInstructions()
           }
-
-          deferredPrompt = null
-          btnInstalarApp.disabled = true
         })
       }
     })()
