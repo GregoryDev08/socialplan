@@ -210,6 +210,13 @@
 
             <ul class="navbar-nav flex-row align-items-center ms-auto gap-2">
 
+              <!-- Botón Instalar App PWA -->
+              <li class="nav-item" id="nav-item-instalar-app" style="display:none;">
+                <button class="btn btn-sm btn-success" id="btn-instalar-app" title="Instalar SocialPlan como aplicación">
+                  <i class="bx bx-download me-1"></i> Instalar App
+                </button>
+              </li>
+
               <!-- Botón Tour guiado -->
               <li class="nav-item">
                 <button class="btn btn-sm btn-outline-primary" id="btn-iniciar-tour" title="Tour de integración">
@@ -506,5 +513,39 @@
 
   {% block extra_js %}{% endblock %}
 
+  <script>
+    (function() {
+      let deferredPrompt = null
+      const navItemInstalar = document.getElementById('nav-item-instalar-app')
+      const btnInstalarApp = document.getElementById('btn-instalar-app')
+
+      window.addEventListener('beforeinstallprompt', function(event) {
+        event.preventDefault()
+        deferredPrompt = event
+        if (navItemInstalar) {
+          navItemInstalar.style.display = 'inline-flex'
+        }
+      })
+
+      if (btnInstalarApp) {
+        btnInstalarApp.addEventListener('click', async function() {
+          if (!deferredPrompt) {
+            return
+          }
+
+          deferredPrompt.prompt()
+          const choiceResult = await deferredPrompt.userChoice
+
+          if (choiceResult.outcome === 'accepted') {
+            if (navItemInstalar) {
+              navItemInstalar.style.display = 'none'
+            }
+          }
+
+          deferredPrompt = null
+        })
+      }
+    })()
+  </script>
 </body>
 </html>
